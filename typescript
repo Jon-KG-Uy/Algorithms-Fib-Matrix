@@ -1,0 +1,311 @@
+Script started on 2018-10-08 11:38:32-04:00
+]0;juy1@erdos:~/private/algorithms/proj1[juy1@erdos proj1]$ cat matri[K[K[K[K[KMatrix.cc proj1.cc
+/*
+ * Implementation file for Matrix and Vector classes
+ * 
+ * @author Jonathan Uy
+ * @date 7 Oct. 2018
+ * @file Matrix.cc
+ */ 
+
+#include "Matrix.h"
+
+Matrix::Matrix(int a, int b, int c, int d)
+{
+   data[0][0] = a;
+   data[0][1] = b;
+   data[1][0] = c;
+   data[1][1] = d;
+}
+
+//resmat uses += to emulate dot product value of matrix multiplication
+//cycle through k, then j, then i to ensure all the items in mat1 and mat2 are 
+//successfully multiplied
+//result matrix is of size four
+Matrix operator*(const Matrix& mat1, const Matrix& mat2)
+{
+	Matrix resmat;
+
+	for(int i = 0; i < 2; ++i)
+		for(int j = 0; j < 2; ++j)
+			for(int k = 0; k < 2; ++k)
+				resmat.data[i][j] += mat1.data[i][k] * mat2.data[k][j];
+
+return resmat;
+}
+
+// stub version, must refine
+// recursive multiplication?
+Matrix power(const Matrix& mat, unsigned int n)
+{
+	Matrix resmat;
+
+//if n == 1, matrix stays the same
+//if n is even, ((x)^y/2)^2
+//if n is odd, ((x)^y/2)^2
+
+	if(n == 1)
+		return mat;
+	else if(n % 2)
+		return mat * power(mat, n-1);
+
+	resmat = power(mat, n/2);
+	resmat = resmat * resmat;
+
+return resmat;
+}
+
+Vector::Vector(int x, int y)
+{
+    data[0] = x;
+    data[1] = y;
+};
+
+// return type == vector struct...
+// F(n) is vector.data[0] according to text
+Vector operator*(const Matrix& mat, const Vector& b)
+{
+	Vector resvec;
+	
+	for(int i = 0; i < 2; ++i)
+		for(int j = 0; j < 2; ++j)
+			resvec.data[i] += mat.data[i][j] * b.data[j];
+	
+return resvec;
+}
+/**@mainpage
+ *
+ * CISC 5825: Computer Algorithms<br/>
+ * Project 1: Comparing Fibonacci Algorithms<br/>
+ *
+ * <p>Computes Fibonacci numbers by the following algorithms:</p>
+ * <ol>
+ *  <li>Naive recursion.</li>
+ *  <li>Explicit matrix-based formula (page 9 of text), based on
+ * fast matrix power algoroithm (page 19)</li>
+ * </ol>
+ * <p>It also gives the timing of these algorithms.</p>
+ *
+ * @author Jonathan Uy
+ * @date 10/7/2018
+ * @file proj1.cc
+ *
+ **********************************************************************/
+
+#include <chrono>
+#include <exception>
+#include <iomanip>
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+using namespace chrono;
+
+#include "Matrix.h"
+
+using Fib_alg = long int(*)(unsigned int);
+
+// function prototypes
+
+/**
+ * Print a usage msg.
+ * 
+ * @param progname the name of the program whose usage msg we print.
+ */ 
+void usage(string progname);
+
+/**
+ * Test a Fibonacci algorithm.
+ *
+ * More precisely, it uses a specific algorithm to compute a specific
+ * Fibonacci number, as well as time how long it took to do so.
+ *
+ * @param name identifies which algorithm we're testing
+ * @param fib a Fibonacci algorithm
+ * @param n maximum Fibonacci index 
+ */
+void test_alg(string name, Fib_alg fib, unsigned int n);
+
+/**
+ * Naive implementation of recursive Fibonacci algorithm.
+ *
+ * @param n index of Fibonacci number \f$F_n\f$
+ *
+ * @return \f$F_n\f$
+ * @pre \f$n\ge0\f$
+ */
+long int fib_rec_naive(unsigned int n);
+
+/**
+ * Fibonacci algorithm, using explict formula with matrix power.
+ *
+ * Use fast algorithm (see page 19 of text, ignore the modular part).
+ *
+ * @param n index of Fibonacci number \f$F_n\f$
+ * @return \f$F_n\f$
+ * @pre \f$n\ge0\$
+ */
+long int fib_matrix(unsigned int n);
+
+/**
+ * The usual main function.
+ *
+ * Takes a non-negative integer \f$n\f$ from the command line.
+ * It then uses the aforementioned algorithms to compute (and print) the
+ * Fibonacci numbers \f$F_n\f$
+ * In addition, it displays the amount of time each algorithm took to
+ * compute \f$F_n\f$.
+ */
+int main(int argc, char* argv[])
+{
+   /// program name, for error msgs
+   string progname {argv[0]};
+
+   try {
+      // check command line arguments
+      if (argc != 2) {
+         usage(progname);
+         return 1;
+      }
+
+      /// order of highest Fibonacci number
+      unsigned int n = stoul(argv[1]);
+
+      // test them out
+      test_alg("naive", fib_rec_naive, n);
+      cout << endl;
+      test_alg("matrix power", fib_matrix, n);
+      return 0;
+
+   } // try
+
+   catch (...) {
+      usage(progname);
+      return 2;
+   }
+}
+
+// function definitions
+
+void usage(string progname)
+{
+   cerr << "usage:\n   " << progname << " n\n"
+        << "where  n  is a non-negative integer\n";
+}
+
+void test_alg(string name, Fib_alg fib, unsigned int n)
+{
+   cout << "Using " << name << " algorithm:\n";
+   auto start = system_clock::now();
+   long int result = fib(n);
+   cout << "Fib[" << n << "] = " << result << endl;
+   auto end = system_clock::now();
+   duration<double> elapsed_seconds = end - start;
+   cout << "Elapsed time: " << setprecision(3)
+        << elapsed_seconds.count() << " seconds\n";
+}
+
+// Recursive Fibonacci Algorithm
+long int fib_rec_naive(unsigned int n)
+{
+	long int result = 0;
+
+	if(n == 0 || n == 1) {
+		result = n;
+	}
+	else{
+		result = fib_rec_naive(n-1) + fib_rec_naive(n-2);
+	}
+    
+return result;
+}
+
+// stub version, must refine/ Matrix multiplication
+long int fib_matrix(unsigned int n)
+{
+	Matrix mat(1, 1, 1, 0);
+	Vector vec(1, 0);
+	Vector resvec(0, 0);
+	long int result = 0;
+
+//if n == 0 or n == 1, fib number is n
+//else resulting F(n) == vector.data[0] of (M^n)*vector
+
+	if(n == 0 || n == 1)
+		result = n;
+	else{
+		resvec = power(mat,n-1) * vec;
+		result = resvec.data[0];
+	}
+		
+return result;
+}
+]0;juy1@erdos:~/private/algorithms/proj1[juy1@erdos proj1]$ make proj1
+g++ -Wall -std=c++17 -g   -c -o proj1.o proj1.cc
+g++ -Wall -std=c++17 -g -c Matrix.cc
+g++ -Wall -std=c++17 -g -o proj1 proj1.o Matrix.o
+]0;juy1@erdos:~/private/algorithms/proj1[juy1@erdos proj1]$ proj1
+usage:
+   proj1 n
+where  n  is a non-negative integer
+]0;juy1@erdos:~/private/algorithms/proj1[juy1@erdos proj1]$ proj1 1
+Using naive algorithm:
+Fib[1] = 1
+Elapsed time: 2.59e-05 seconds
+
+Using matrix power algorithm:
+Fib[1] = 1
+Elapsed time: 1.21e-05 seconds
+]0;juy1@erdos:~/private/algorithms/proj1[juy1@erdos proj1]$ proj1 2
+Using naive algorithm:
+Fib[2] = 1
+Elapsed time: 2.57e-05 seconds
+
+Using matrix power algorithm:
+Fib[2] = 1
+Elapsed time: 4.8e-06 seconds
+]0;juy1@erdos:~/private/algorithms/proj1[juy1@erdos proj1]$ proj1 10
+Using naive algorithm:
+Fib[10] = 55
+Elapsed time: 2.72e-05 seconds
+
+Using matrix power algorithm:
+Fib[10] = 55
+Elapsed time: 1.57e-05 seconds
+]0;juy1@erdos:~/private/algorithms/proj1[juy1@erdos proj1]$ proj1 20
+Using naive algorithm:
+Fib[20] = 6765
+Elapsed time: 0.000228 seconds
+
+Using matrix power algorithm:
+Fib[20] = 6765
+Elapsed time: 8.06e-06 seconds
+]0;juy1@erdos:~/private/algorithms/proj1[juy1@erdos proj1]$ proj1 30
+Using naive algorithm:
+Fib[30] = 832040
+Elapsed time: 0.0197 seconds
+
+Using matrix power algorithm:
+Fib[30] = 832040
+Elapsed time: 5.34e-06 seconds
+]0;juy1@erdos:~/private/algorithms/proj1[juy1@erdos proj1]$ proj1 40
+Using naive algorithm:
+Fib[40] = 102334155
+Elapsed time: 1.47 seconds
+
+Using matrix power algorithm:
+Fib[40] = 102334155
+Elapsed time: 1.64e-05 seconds
+]0;juy1@erdos:~/private/algorithms/proj1[juy1@erdos proj1]$ proj1 45
+Using naive algorithm:
+Fib[45] = 1134903170
+Elapsed time: 13.3 seconds
+
+Using matrix power algorithm:
+Fib[45] = 1134903170
+Elapsed time: 1.58e-05 seconds
+]0;juy1@erdos:~/private/algorithms/proj1[juy1@erdos proj1]$ exit
+exit
+
+Script done on 2018-10-08 11:39:51-04:00
